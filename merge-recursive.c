@@ -1039,7 +1039,8 @@ static int merge_3way(struct merge_options *o,
 		      const struct diff_filespec *a,
 		      const struct diff_filespec *b,
 		      const char *branch1,
-		      const char *branch2)
+		      const char *branch2,
+		      const int extra_marker_size)
 {
 	mmfile_t orig, src1, src2;
 	struct ll_merge_options ll_opts = {0};
@@ -1047,6 +1048,7 @@ static int merge_3way(struct merge_options *o,
 	int merge_status;
 
 	ll_opts.renormalize = o->renormalize;
+	ll_opts.extra_marker_size = extra_marker_size;
 	ll_opts.xdl_opts = o->xdl_opts;
 
 	if (o->call_depth) {
@@ -1281,6 +1283,7 @@ static int merge_mode_and_contents(struct merge_options *o,
 				   const char *filename,
 				   const char *branch1,
 				   const char *branch2,
+				   const int extra_marker_size,
 				   struct merge_file_info *result)
 {
 	result->merge = 0;
@@ -1321,7 +1324,8 @@ static int merge_mode_and_contents(struct merge_options *o,
 			int ret = 0, merge_status;
 
 			merge_status = merge_3way(o, &result_buf, one, a, b,
-						  branch1, branch2);
+						  branch1, branch2,
+						  extra_marker_size);
 
 			if ((merge_status < 0) || !result_buf.ptr)
 				ret = err(o, _("Failed to execute internal merge"));
@@ -1610,7 +1614,8 @@ static int handle_rename_rename_1to2(struct merge_options *o,
 		struct diff_filespec other;
 		struct diff_filespec *add;
 		if (merge_mode_and_contents(o, one, a, b, one->path,
-					    ci->branch1, ci->branch2, &mfi))
+					    ci->branch1, ci->branch2,
+					    o->call_depth * 2, &mfi))
 			return -1;
 
 		/*
@@ -1677,9 +1682,11 @@ static int handle_rename_rename_2to1(struct merge_options *o,
 	path_side_1_desc = xstrfmt("%s (was %s)", path, a->path);
 	path_side_2_desc = xstrfmt("%s (was %s)", path, b->path);
 	if (merge_mode_and_contents(o, a, c1, &ci->ren1_other, path_side_1_desc,
-				    o->branch1, o->branch2, &mfi_c1) ||
+				    o->branch1, o->branch2,
+				    o->call_depth * 2, &mfi_c1) ||
 	    merge_mode_and_contents(o, b, &ci->ren2_other, c2, path_side_2_desc,
-				    o->branch1, o->branch2, &mfi_c2))
+				    o->branch1, o->branch2,
+				    o->call_depth * 2, &mfi_c2))
 		return -1;
 	free(path_side_1_desc);
 	free(path_side_2_desc);
@@ -2725,7 +2732,7 @@ static int process_renames(struct merge_options *o,
 
 					if (merge_mode_and_contents(o, &one, &a, &b, ren1_dst,
 								    branch1, branch2,
-								    &mfi)) {
+								    o->call_depth * 2, &mfi)) {
 						clean_merge = -1;
 						goto cleanup_and_return;
 					}
@@ -3022,7 +3029,8 @@ static int handle_content_merge(struct merge_options *o,
 			df_conflict_remains = 1;
 	}
 	if (merge_mode_and_contents(o, &one, &a, &b, path,
-				    o->branch1, o->branch2, &mfi))
+				    o->branch1, o->branch2,
+				    o->call_depth * 2, &mfi))
 		return -1;
 
 	/*

@@ -1487,7 +1487,7 @@ test_expect_success "setup virtual merge base with nested conflicts" '
 	)
 '
 
-test_expect_failure "check virtual merge base with nested conflicts" '
+test_expect_success "check virtual merge base with nested conflicts" '
 	(
 		cd virtual_merge_base_has_nested_conflicts &&
 
