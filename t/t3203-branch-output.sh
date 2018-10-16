@@ -119,12 +119,14 @@ test_expect_success 'git branch `--show-current` works properly when tag exists'
 	cat >expect <<-\EOF &&
 	branch-and-tag-name
 	EOF
-	test_when_finished "git branch -D branch-and-tag-name" &&
+	test_when_finished "
+		git checkout branch-one
+		git branch -D branch-and-tag-name
+	" &&
 	git checkout -b branch-and-tag-name &&
 	test_when_finished "git tag -d branch-and-tag-name" &&
 	git tag branch-and-tag-name &&
 	git branch --show-current >actual &&
-	git checkout branch-one &&
 	test_cmp expect actual
 '
 
@@ -137,8 +139,7 @@ test_expect_success 'git branch `--show-current` works properly with worktrees' 
 	git worktree add worktree branch-two &&
 	(
 		git branch --show-current &&
-		cd worktree &&
-		git branch --show-current
+		git -C worktree branch --show-current
 	) >actual &&
 	test_cmp expect actual
 '
